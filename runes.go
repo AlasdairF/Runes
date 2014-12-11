@@ -54,6 +54,7 @@ func IndexRune(s []rune, c rune) int {
 func Map(mapping func(r rune) rune, s []rune) []rune {
 	newslice := s
 	var on int
+	var r rune
 	for i, c := range s {
 		r = mapping(r)
 		if r >= 0 {
@@ -61,7 +62,7 @@ func Map(mapping func(r rune) rune, s []rune) []rune {
 			on++
 		}
 	}
-	return cpy[0:on]
+	return newslice[0:on]
 }
 
 // ToUpper returns a copy of the rune slice s with all Unicode letters mapped to their upper case.
