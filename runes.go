@@ -31,7 +31,7 @@ func Index(s, sep []rune) int {
 			}
 			i += o
 		}
-		if equalPortable(s[i:i+n], sep) {
+		if Equal(s[i:i+n], sep) {
 			return i
 		}
 		i++
@@ -88,7 +88,7 @@ func ToTitleSpecial(_case unicode.SpecialCase, s []rune) []rune {
 	return Map(func(r rune) rune { return _case.ToTitle(r) }, s)
 }
 
-func equalPortable(a, b []rune) bool {
+func Equal(a, b []rune) bool {
 	if len(a) != len(b) {
 		return false
 	}
