@@ -54,11 +54,10 @@ func IndexRune(s []rune, c rune) int {
 func Map(mapping func(r rune) rune, s []rune) []rune {
 	newslice := s
 	var on int
-	var r rune
-	for i, c := range s {
-		r = mapping(r)
-		if r >= 0 {
-			newslice[on] = r
+	var c rune
+	for _, c = range s {
+		if c = mapping(c); c >= 0 {
+			newslice[on] = c
 			on++
 		}
 	}
