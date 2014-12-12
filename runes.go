@@ -39,6 +39,21 @@ func Index(s, sep []rune) int {
 		return -1
 }
 
+// LastIndex returns the index of the last instance of sep in s, or -1 if sep is not present in s.
+func LastIndex(s, sep []rune) int {
+	n := len(sep)
+	if n == 0 {
+		return len(s)
+	}
+	c := sep[0]
+	for i := len(s) - n; i >= 0; i-- {
+		if s[i] == c && (n == 1 || Equal(s[i:i+n], sep)) {
+			return i
+		}
+	}
+	return -1
+}
+
 // IndexRune returns the rune index of the first occurrence in s of the given rune c, or -1 if c is not present in s.
 func IndexRune(s []rune, c rune) int {
 	for i, b := range s {
@@ -47,6 +62,117 @@ func IndexRune(s []rune, c rune) int {
 		}
 	}
 	return -1
+}
+
+// explode splits s into a slice of UTF-8 sequences, one per Unicode character (still slices of bytes), up to a maximum of n byte slices. Invalid UTF-8 sequences are chopped into individual bytes.
+func explode(s []rune, n int) [][]rune {
+	if n <= 0 {
+		n = len(s)
+	}
+	a := make([][]rune, n)
+	na := 0
+	for len(s) > 0 {
+		if na+1 >= n {
+			a[na] = s
+			na++
+			break
+		}
+		a[na] = s[0:1]
+		s = s[1:]
+		na++
+	}
+	return a[0:na]
+}
+
+func Count(s, sep []rune) int {
+	n := len(sep)
+	if n == 0 {
+		return len(s) + 1
+	}
+	if n > len(s) {
+		return 0
+	}
+	count := 0
+	c := sep[0]
+	i := 0
+	t := s[:len(s)-n+1]
+	for i < len(t) {
+		if t[i] != c {
+ 			o := IndexRune(t[i:], c)
+			if o < 0 {
+				break
+			}
+			i += o
+		}
+		if n == 1 || Equal(s[i:i+n], sep) {
+			count++
+			i += n
+			continue
+		}
+		i++
+	}
+	return count
+}
+
+// Generic split: splits after each instance of sep, including sepSave bytes of sep in the subslices.
+func genSplit(s, sep []rune, sepSave, n int) [][]rune {
+	if n == 0 {
+		return nil
+	}
+	if len(sep) == 0 {
+		return explode(s, n)
+	}
+	if n < 0 {
+		n = Count(s, sep) + 1
+	}
+ 	c := sep[0]
+	start := 0
+	a := make([][]rune, n)
+	na := 0
+	for i := 0; i+len(sep) <= len(s) && na+1 < n; i++ {
+		if s[i] == c && (len(sep) == 1 || Equal(s[i:i+len(sep)], sep)) {
+			a[na] = s[start : i+sepSave]
+			na++
+			start = i + len(sep)
+			i += len(sep) - 1
+		}
+	}
+	a[na] = s[start:]
+	return a[0 : na+1]
+}
+
+// SplitN slices s into subslices separated by sep and returns a slice of
+// the subslices between those separators.
+// If sep is empty, SplitN splits after each rune.
+// The count determines the number of subslices to return:
+//   n > 0: at most n subslices; the last subslice will be the unsplit remainder.
+//   n == 0: the result is nil (zero subslices)
+//   n < 0: all subslices
+func SplitN(s, sep []rune, n int) [][]rune { return genSplit(s, sep, 0, n) }
+
+// SplitAfterN slices s into subslices after each instance of sep and
+// returns a slice of those subslices.
+// If sep is empty, SplitAfterN splits after each rune.
+// The count determines the number of subslices to return:
+//   n > 0: at most n subslices; the last subslice will be the unsplit remainder.
+//   n == 0: the result is nil (zero subslices)
+//   n < 0: all subslices
+func SplitAfterN(s, sep []rune, n int) [][]rune {
+	return genSplit(s, sep, len(sep), n)
+}
+
+// Split slices s into all subslices separated by sep and returns a slice of
+// the subslices between those separators.
+// If sep is empty, Split splits after each rune.
+// It is equivalent to SplitN with a count of -1.
+func Split(s, sep []rune) [][]rune { return genSplit(s, sep, 0, -1) }
+
+// SplitAfter slices s into all subslices after each instance of sep and
+// returns a slice of those subslices.
+// If sep is empty, SplitAfter splits after each rune.
+// It is equivalent to SplitAfterN with a count of -1.
+func SplitAfter(s, sep []rune) [][]rune {
+	return genSplit(s, sep, len(sep), -1)
 }
 
 // Map returns a copy of the rune slice s with all its characters modified according to the mapping function.
