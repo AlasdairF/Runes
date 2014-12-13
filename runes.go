@@ -79,7 +79,7 @@ func FieldsFuncBytes(s []byte, f func(rune) bool) [][]rune {
 	}
 
 	a := make([][]rune, n)
-	buf := make([]rune, 0, na)
+	buf := make([]rune, na)
 	na, on = 0, 0
 	for i = 0; i <= l && na < n; {
 		r, size = utf8.DecodeRune(s[i:])
