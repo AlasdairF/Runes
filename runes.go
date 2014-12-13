@@ -2,6 +2,96 @@ package runes
 
 import "unicode"
 
+// Fields splits the slice s around each instance of one or more consecutive white space characters, returning a slice of subslices of s or an empty list if s contains only white space.
+func Fields(s []rune) [][]rune {
+	return FieldsFunc(s, unicode.IsSpace)
+}
+
+// Fields splits the slice s around each instance of one or more consecutive white space characters, returning a slice of subslices of s or an empty list if s contains only white space.
+func FieldsBytes(s []byte) [][]rune {
+	return FieldsFuncBytes(s, unicode.IsSpace)
+}
+
+// FieldsFunc interprets s as a sequence of UTF-8-encoded Unicode code points.
+// It splits the slice s at each run of code points c satisfying f(c) and
+// returns a slice of subslices of s.  If all code points in s satisfy f(c), or
+// len(s) == 0, an empty slice is returned.
+// FieldsFunc makes no guarantees about the order in which it calls f(c).
+// If f does not return consistent results for a given c, FieldsFunc may crash.
+func FieldsFunc(s []rune, f func(rune) bool) [][]rune {
+	var n int
+	var inField, wasInField bool
+	var r rune
+	for _, r = range s {
+		wasInField = inField
+		inField = !f(r)
+		if inField && !wasInField {
+			n++
+		}
+	}
+
+	a := make([][]rune, n)
+	var i int
+	var inf bool
+	fieldStart := -1
+	n = 0
+	for i, r = range s {
+		inf = f(r)
+		if fieldStart < 0 && !inf {
+			fieldStart = i
+			continue
+		}
+		if fieldStart >= 0 && inf {
+			a[n] = s[fieldStart:i]
+			n++
+			fieldStart = -1
+		}
+	}
+	
+	return a[0:n]
+}
+
+// FieldsFuncBytes is the same as FieldsFunc but the input is a slice of bytes and output is runes.
+func FieldsFuncBytes(s []byte, f func(rune) bool) [][]rune {
+	var n, size, i int
+	var r rune
+	var inField, wasInField bool
+	l := len(s)
+	for i = 0; i < l; i += size {
+		r, size = utf8.DecodeRune(s[i:])
+		wasInField = inField
+		inField = !f(r)
+		if inField && !wasInField {
+			n++
+		}
+	}
+
+	a := make([][]rune, n)
+	buf := make([]rune, 0, 1)
+	var na int
+	for i = 0; i <= l && na < n; {
+		r, size = utf8.DecodeRune(s[i:])
+		if size == 0 {
+			break
+		}
+		if f(r) {
+			if len(buf) > 0 {
+				a[na] = buf
+				na++
+				buf = make([]rune, 0, 1)
+			}
+		} else {
+			buf = append(buf, r)
+		}
+		i += size
+	}
+	if len(buf) > 0 {
+		a[na] = buf
+		na++
+	}
+	return a[0:na]
+}
+
 // Contains reports whether subslice is within b.
 func Contains(b, subslice []rune) bool {
 	return Index(b, subslice) != -1
