@@ -1,6 +1,10 @@
 package runes
 
-import "unicode"
+import (
+	"unicode"
+	"unicode/utf8"
+	"github.com/AlasdairF/Unleak"
+)
 
 // Fields splits the slice s around each instance of one or more consecutive white space characters, returning a slice of subslices of s or an empty list if s contains only white space.
 func Fields(s []rune) [][]rune {
@@ -53,7 +57,7 @@ func FieldsFunc(s []rune, f func(rune) bool) [][]rune {
 
 // FieldsFuncBytes is the same as FieldsFunc but the input is a slice of bytes and output is runes.
 func FieldsFuncBytes(s []byte, f func(rune) bool) [][]rune {
-	var n, size, i int
+	var n, size, i, on, na int
 	var r rune
 	var inField, wasInField bool
 	l := len(s)
@@ -61,32 +65,41 @@ func FieldsFuncBytes(s []byte, f func(rune) bool) [][]rune {
 		r, size = utf8.DecodeRune(s[i:])
 		wasInField = inField
 		inField = !f(r)
-		if inField && !wasInField {
-			n++
+		if inField {
+			if !wasInField {
+				n++
+				if on > na {
+					na = on
+				}
+				on = 0
+			} else {
+				on++
+			}
 		}
 	}
 
 	a := make([][]rune, n)
-	buf := make([]rune, 0, 1)
-	var na int
+	buf := make([]rune, 0, na)
+	na, on = 0, 0
 	for i = 0; i <= l && na < n; {
 		r, size = utf8.DecodeRune(s[i:])
 		if size == 0 {
 			break
 		}
 		if f(r) {
-			if len(buf) > 0 {
-				a[na] = buf
+			if on > 0 {
+				a[na] = unleak.Runes(buf[0:on])
+				on = 0
 				na++
-				buf = make([]rune, 0, 1)
 			}
 		} else {
-			buf = append(buf, r)
+			buf[on] = r
+			on++
 		}
 		i += size
 	}
-	if len(buf) > 0 {
-		a[na] = buf
+	if on > 0 {
+		a[na] = unleak.Runes(buf[0:on])
 		na++
 	}
 	return a[0:na]
