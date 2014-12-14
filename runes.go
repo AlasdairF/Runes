@@ -78,11 +78,14 @@ func FieldsFuncBytes(s []byte, f func(rune) bool) [][]rune {
 			}
 		}
 	}
+	if on > na {
+		na = on
+	}
 
 	a := make([][]rune, n)
 	buf := make([]rune, na)
 	na, on = 0, 0
-	for i = 0; i <= l && na < n; {
+	for i = 0; i <= l && na < n; i += size {
 		r, size = utf8.DecodeRune(s[i:])
 		if size == 0 {
 			break
@@ -97,7 +100,6 @@ func FieldsFuncBytes(s []byte, f func(rune) bool) [][]rune {
 			buf[on] = r
 			on++
 		}
-		i += size
 	}
 	if on > 0 {
 		a[na] = unleak.Runes(buf[0:on])
