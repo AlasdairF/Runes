@@ -57,23 +57,24 @@ func FieldsFunc(s []rune, f func(rune) bool) [][]rune {
 
 // FieldsFuncBytes is the same as FieldsFunc but the input is a slice of bytes and output is runes.
 func FieldsFuncBytes(s []byte, f func(rune) bool) [][]rune {
-	var n, size, i, on, na int
+	var n, size, i, na int
 	var r rune
 	var inField, wasInField bool
 	l := len(s)
+	on := 1
 	for i = 0; i < l; i += size {
 		r, size = utf8.DecodeRune(s[i:])
 		wasInField = inField
 		inField = !f(r)
 		if inField {
-			if !wasInField {
+			if wasInField {
+				on++
+			} else {
 				n++
 				if on > na {
 					na = on
 				}
-				on = 0
-			} else {
-				on++
+				on = 1
 			}
 		}
 	}
